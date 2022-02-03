@@ -14,17 +14,23 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-import { GraphViewManager } from './src/GraphViewManager';
+import { GraphView } from './src/GraphViewManager';
 
 
 const App = () => {
 
+  const sampleData = [{ x: 0, y: 31 }, { x: 1, y: 15 }, { x: 2, y: 60 }, { x: 3, y: 50 }, { x: 4, y: 51 },
+  { x: 5, y: 100 }, { x: 6, y: 15 }, { x: 7, y: 44 }, { x: 8, y: 50 }, { x: 9, y: 51 }]
+  const sampleLabels = ["14:00", "14:01", "14:02", "14:03", "14:04", "14:05",
+    "14:06", "14:07", "14:08"]
+
   return (
     <View style={styles.container}>
-      <GraphViewManager assembleData={{
-        label: "Label a",
-        data: [{ key: 1643835776, value: 123 }, { key: 1643835777, value: 124 }, { key: 1643835778, value: 125 }]
+      <GraphView assembleData={{
+        labels: sampleLabels, data: sampleData,
+        visibleX: 8
       }} style={styles.view} />
+
       <Button title='BUTTON' />
     </View>
   );

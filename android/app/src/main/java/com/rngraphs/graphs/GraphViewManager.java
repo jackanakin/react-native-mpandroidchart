@@ -1,10 +1,5 @@
 package com.rngraphs.graphs;
 
-import android.widget.TextView;
-
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.uimanager.SimpleViewManager;
 import com.facebook.react.uimanager.ThemedReactContext;
@@ -15,9 +10,7 @@ import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
-import com.rngraphs.graphs.models.DataEntry;
-import com.rngraphs.graphs.models.DataItem;
-import com.rngraphs.graphs.samples.SampleService;
+import com.github.mikephil.charting.utils.ColorTemplate;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,33 +21,57 @@ public class GraphViewManager extends SimpleViewManager<LineChart> {
     private ThemedReactContext reactContext = null;
 
     private LineChart lineChart = null;
-    private LineData lineData;
-    private List<Entry> entryList = new ArrayList<>();
+    private LineData lineData = null;
 
     @ReactProp(name = "assembleData")
-    public void assembleData(LineChart view, ReadableMap data) {
-        System.out.println("GraphViewManager:assembleData");
+    public void assembleData(LineChart view, ReadableMap readableMap) {
+        System.out.println(readableMap);
 
-        HashMap<String, Object> hashMap = data.toHashMap();
-        System.out.println(hashMap);
+        try {
+            HashMap<String, Object> hashMap = readableMap.toHashMap();
 
-        String label = (String) hashMap.get("label");
-        System.out.println(label);
+            // RETRIEVE VISIBLE-X
+            double visibleXDouble = (double) hashMap.get("visibleX");
+            int visibleX = ((int) visibleXDouble);
 
-        List<HashMap<String, String>> dataList = (List<HashMap<String, String>>) hashMap.get("data");
-        System.out.println(dataList);
-        for (HashMap<String, String> record : dataList) {
-            System.out.println("key="+record.get("key") + ", value="+record.get("value"));
+            // RETRIEVE LABELS
+            List<String> labelList = (List<String>) hashMap.get("labels");
+
+            // RETRIEVE DATA
+            List<HashMap<String, Double>> dataList = (List<HashMap<String, Double>>) hashMap.get("data");
+
+            List<Entry> entryList = new ArrayList<>();
+            for (HashMap<String, Double> record : dataList) {
+                float x = record.get("x").floatValue();
+                float y = record.get("y").floatValue();
+                entryList.add(new Entry(x, y));
+            }
+
+            //ASSEMBLE DATA
+            LineDataSet lineDataSet = new LineDataSet(entryList, "teste");
+            ArrayList<ILineDataSet> dataSets = new ArrayList<ILineDataSet>();
+            dataSets.add(lineDataSet);
+            lineData = new LineData(dataSets);
+            lineData.setDrawValues(false);
+
+            //ASSEMBLE LABELS
+            //List<String> xAxisValues = new ArrayList<>(labelList);
+            lineChart.getXAxis().setValueFormatter(new com.github.mikephil.charting.formatter.IndexAxisValueFormatter(labelList));
+            XAxis xAxis = lineChart.getXAxis();
+            xAxis.setLabelRotationAngle(-90);
+            xAxis.setLabelCount(labelList.size());
+            xAxis.setGranularityEnabled(true);
+
+            lineChart.setData(lineData);
+            lineChart.invalidate();
+            lineChart.setVisibleXRangeMaximum(visibleX);
+        }catch (Exception e){
+            System.out.println(e.toString());
+            lineChart.setNoDataText(e.toString());
+            lineChart.setNoDataTextColor(ColorTemplate.rgb("#FF0000"));
+            lineChart.setData(null);
+            lineChart.invalidate();
         }
-
-        lineChart.setData(lineData);
-        lineChart.setVisibleXRangeMaximum(10);
-        lineChart.invalidate();
-    }
-
-    @Override
-    public String getName() {
-        return REACT_CLASS;
     }
 
     private void setupGraphSettings(){
@@ -69,39 +86,16 @@ public class GraphViewManager extends SimpleViewManager<LineChart> {
     }
 
     @Override
+    public String getName() {
+        return REACT_CLASS;
+    }
+
+    @Override
     protected LineChart createViewInstance(ThemedReactContext reactContext) {
-        System.out.println("GraphViewManager:createViewInstance=START");
         this.reactContext = reactContext;
+
         setupGraphSettings();
 
-        SampleService sampleService = new SampleService();
-        DataItem item = sampleService.getSamples();
-        List<String> xLabels = new ArrayList<String>();
-
-        int x = 0;
-        for (DataEntry entry: item.getDataset() ){
-            entryList.add(new Entry(x, entry.getFormattedValue()));
-            xLabels.add("14:"+x);
-            x++;
-        }
-
-        LineDataSet lineDataSet = new LineDataSet(entryList, "teste");
-        ArrayList<ILineDataSet> dataSets = new ArrayList<ILineDataSet>();
-        dataSets.add(lineDataSet);
-
-        lineData = new LineData(dataSets);
-        lineData.setDrawValues(false);
-
-        List<String> xAxisValues = new ArrayList<>(xLabels);
-        lineChart.getXAxis().setValueFormatter(new com.github.mikephil.charting.formatter.IndexAxisValueFormatter(xAxisValues));
-        XAxis xAxis = lineChart.getXAxis();
-        xAxis.setLabelRotationAngle(-90);
-        xAxis.setLabelCount(xAxisValues.size());
-        xAxis.setGranularityEnabled(true);
-
-
-
-        System.out.println("GraphViewManager:createViewInstance=END");
         return lineChart;
     }
 }
